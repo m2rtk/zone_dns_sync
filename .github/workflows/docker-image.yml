@@ -15,11 +15,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag m2rtk/zone-dns-sync:1.$GITHUB_RUN_NUMBER
+      run: docker build . --file Dockerfile --tag m2rtk/zone-dns-sync:1.$GITHUB_RUN_NUMBER --tag m2rtk/zone-dns-sync:latest
     - name: Login to dockerhub
       env:
         DOCKERHUB_USERNAME: ${{secrets.DOCKERHUB_USERNAME}}
         DOCKERHUB_PASSWORD: ${{secrets.DOCKERHUB_PASSWORD}}
       run: docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
-    - name: Upload image to dockerhub
+    - name: Upload versioned image to dockerhub
       run: docker push m2rtk/zone-dns-sync:1.$GITHUB_RUN_NUMBER
+    - name: Upload latest image to dockerhub
+      run: docker push m2rtk/zone-dns-sync:latest
