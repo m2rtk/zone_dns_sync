@@ -5,6 +5,7 @@ import time
 import logging
 import sys
 from dataclasses import dataclass
+from cachetools import TTLCache
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -25,10 +26,14 @@ def get_external_ip() -> str:
 
 
 class Zone:
-    def __init__(self, zone_username, zone_api_key, base_url='https://api.zone.eu/v2'):
+    def __init__(self,
+                 zone_username,
+                 zone_api_key,
+                 base_url='https://api.zone.eu/v2',
+                 cache_ttl=1800):
         self.basic_auth = "Basic " + base64.b64encode((zone_username + ':' + zone_api_key).encode()).decode('utf8')
         self.base_url = base_url
-        self.cache = {}
+        self.cache = TTLCache(maxsize=1000, ttl=cache_ttl)
 
     def get_dns_a_records(self, domain):
         if domain not in self.cache:
@@ -97,10 +102,10 @@ class ARecordDto:
 
 if __name__ == '__main__':
     import argparse
-    zone = Zone(env('ZONE_USERNAME'), env('ZONE_API_KEY'))
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--interval-seconds', type=int, default=10)
+    parser.add_argument('--zone-cache-ttl-seconds', type=int, default=1800)
     parser.add_argument('--a-record', dest='a_records', action='append', type=ARecordDto.parse)
 
     args = parser.parse_args()
@@ -108,6 +113,8 @@ if __name__ == '__main__':
     if not args.a_records:
         logging.error("No A records given. Use '--a-record domain:name'")
         exit(1)
+
+    zone = Zone(env('ZONE_USERNAME'), env('ZONE_API_KEY'), cache_ttl=args.zone_cache_ttl_seconds)
 
     while True:
         try:
