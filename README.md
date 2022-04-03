@@ -1,4 +1,4 @@
-# Thing that updates dns entry in zone.ee when external IP changes
+# Thing that updates dns entry in zone.ee when your external IP changes
 
 ## Usage
 
