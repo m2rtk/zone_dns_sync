@@ -104,15 +104,14 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--interval-seconds', type=int, default=10)
-    parser.add_argument('--zone-cache-ttl-seconds', type=int, default=1800)
-    parser.add_argument('--a-record', dest='a_records', action='append', type=ARecordDto.parse)
+    parser.add_argument('--interval-seconds', type=int, default=10, help='How often to check for external IP')
+    parser.add_argument('--zone-cache-ttl-seconds', type=int, default=1800, help='How long to cache records fetched from zone.ee')
+    parser.add_argument('--a-record', dest='a_records', action='append', type=ARecordDto.parse, help="A record to update when IP changes. Example: 'm2rt.eu:*.m2rt.eu'. Can be specified multiple times.")
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
 
     if not args.a_records:
-        logging.error("No A records given. Use '--a-record domain:name'")
-        exit(1)
+        parser.error("At least 1 A record required. Use '--a-record domain:name'")
 
     zone = Zone(env('ZONE_USERNAME'), env('ZONE_API_KEY'), cache_ttl=args.zone_cache_ttl_seconds)
 
