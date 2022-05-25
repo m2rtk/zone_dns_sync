@@ -81,6 +81,19 @@ class A:
         logging.info(f"PUT {url} {self.name} {destination} -> OK")
 
 
+class OneOneOneOne:
+    def __init__(self):
+        self.base_url = "https://1.1.1.1/api/v1"
+        pass
+
+    def flush(self, domain):
+        url = f"{self.base_url}/purge?domain={domain}&type=A"
+        logging.debug(f"POST {url}")
+        response = requests.post(url)
+        response.raise_for_status()
+        logging.info(f"POST {url} -> OK")
+
+
 def env(key) -> str:
     value = os.getenv(key)
     if not value:
@@ -93,11 +106,18 @@ def env(key) -> str:
 class ARecordDto:
     domain: str
     name: str
+    flushable_domain: str
 
     @staticmethod
     def parse(s):
-        split = s.split(':', 2)
-        return ARecordDto(split[0], split[1])
+        split = s.split(':', 3)
+
+        if len(split) == 3:
+            flushable_domain = split[2]
+        else:
+            flushable_domain = None
+
+        return ARecordDto(split[0], split[1], flushable_domain)
 
 
 if __name__ == '__main__':
@@ -114,6 +134,7 @@ if __name__ == '__main__':
         parser.error("At least 1 A record required. Use '--a-record domain:name'")
 
     zone = Zone(env('ZONE_USERNAME'), env('ZONE_API_KEY'), cache_ttl=args.zone_cache_ttl_seconds)
+    one_one_one_one = OneOneOneOne()
 
     while True:
         try:
@@ -125,6 +146,10 @@ if __name__ == '__main__':
                 if external_ip != record.destination:
                     logging.info(f"IP does not match with {record.domain} {record.name} {record.destination}")
                     record.update(external_ip)
+
+                    if input_a_record.flushable_domain:
+                        one_one_one_one.flush(input_a_record.flushable_domain)
+
                 else:
                     logging.info(f"IP matches with {record.domain} {record.name}")
         except requests.exceptions.HTTPError as e:
